@@ -1,103 +1,69 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" class="dark">
 <head>
     <meta charset="UTF-8">
-    <title>경조 기안 보관함 - 원본 양식 완벽 반영</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>업무 기록 저장소</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
     <style>
-        :root { --primary: #2c3e50; --accent: #3498db; --bg: #f5f6f7; }
-        body { font-family: 'Malgun Gothic', sans-serif; background: var(--bg); margin: 0; display: flex; height: 100vh; overflow: hidden; }
-        
-        /* 사이드바 설정 */
-        .sidebar { width: 350px; background: white; border-right: 1px solid #ddd; padding: 20px; display: flex; flex-direction: column; overflow-y: auto; flex-shrink: 0; }
-        .sidebar h2 { font-size: 18px; color: var(--primary); margin-bottom: 20px; border-bottom: 2px solid var(--accent); padding-bottom: 10px; }
-        .form-group { margin-bottom: 10px; }
-        label { display: block; font-size: 11px; font-weight: bold; color: #666; margin-bottom: 3px; }
-        input { width: 100%; padding: 7px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; box-sizing: border-box; }
-        
-        /* 메인 영역 */
-        .main-pane { flex: 1; display: flex; flex-direction: column; min-width: 900px; }
-        .archive-pane { height: 30%; background: #fff; border-bottom: 1px solid #ddd; padding: 15px; overflow-y: auto; }
-        .archive-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-        .archive-table th { background: var(--primary); color: white; padding: 8px; position: sticky; top: 0; }
-        .archive-table td { border-bottom: 1px solid #eee; padding: 8px; text-align: center; cursor: pointer; }
-        .archive-table tr:hover td { background: #f0f7ff; }
-
-        /* 미리보기 영역 */
-        .preview-pane { flex: 1; padding: 20px; overflow: auto; background: #888; display: flex; flex-direction: column; align-items: center; }
-        .btn-row { display: flex; gap: 10px; margin-bottom: 15px; }
-        .btn-copy { background: #27ae60; color: white; padding: 12px 30px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 16px; }
-        .btn-save { background: var(--accent); color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; }
-        .btn-new { background: #95a5a6; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; }
-        
-        /* 렌더링 컨테이너: 원본 크기 유지를 위해 scale 조정 */
-        #render-wrapper { background: white; padding: 20px; box-shadow: 0 0 30px rgba(0,0,0,0.3); transform: scale(0.8); transform-origin: top center; }
+        body { background-color: #000000; color: #e5e5e5; }
+        .menu-active { border-bottom: 2px solid #3b82f6; color: #3b82f6; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
     </style>
 </head>
-<body>
+<body class="min-h-screen flex flex-col">
 
-<div class="sidebar">
-    <h2>✍️ 기안 정보 입력</h2>
-    <input type="hidden" id="edit-id">
-    <div class="form-group"><label>보관용 제목</label><input type="text" id="doc-title" placeholder="목록 구분용 제목"></div>
-    <div class="form-group"><label>당사와의 관계</label><input type="text" id="rel" oninput="updatePreview()"></div>
-    <div class="form-group"><label>회사명/소속</label><input type="text" id="dept" oninput="updatePreview()"></div>
-    <div class="form-group"><label>성명/직급</label><input type="text" id="name" oninput="updatePreview()"></div>
-    <div class="form-group"><label>연락처</label><input type="text" id="phone" oninput="updatePreview()"></div>
-    <div class="form-group"><label>경조구분</label><input type="text" id="type" oninput="updatePreview()"></div>
-    <div class="form-group"><label>목적(사유)</label><input type="text" id="reason" oninput="updatePreview()"></div>
-    <div class="form-group"><label>경조일자</label><input type="text" id="date" oninput="updatePreview()"></div>
-    <div class="form-group"><label>주소</label><input type="text" id="addr" oninput="updatePreview()"></div>
-    <div class="form-group"><label>보내는 사람(명의)</label><input type="text" id="sender" oninput="updatePreview()"></div>
-    <div class="form-group"><label>지급방법/계좌</label><input type="text" id="method" oninput="updatePreview()"></div>
-    
-    <div class="btn-row" style="margin-top:20px;">
-        <button class="btn-save" onclick="saveDraft()">저장</button>
-        <button class="btn-new" onclick="resetForm()">지우기</button>
-    </div>
-</div>
-
-<div class="main-pane">
-    <div class="archive-pane">
-        <h3 style="margin:0 0 10px 0;">📂 기안 보관함</h3>
-        <table class="archive-table">
-            <thead><tr><th>저장일</th><th>제목</th><th>성명</th><th>삭제</th></tr></thead>
-            <tbody id="archive-list"></tbody>
-        </table>
-    </div>
-    
-    <div class="preview-pane">
-        <div class="btn-row">
-            <button class="btn-copy" onclick="copyHTML()">📋 현재 양식 HTML 복사</button>
+    <nav class="bg-zinc-900 border-b border-zinc-800 sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-4">
+            <div class="flex justify-between items-center h-16">
+                <div class="font-bold text-xl text-white">WORK LOG</div>
+                <div class="hidden md:flex space-x-8">
+                    <button onclick="showSection('excel')" class="nav-link menu-active py-2">엑셀 뷰어</button>
+                    <button onclick="showSection('pdf')" class="nav-link py-2">PDF 요약</button>
+                    <button onclick="showSection('export')" class="nav-link py-2">CSV 내보내기</button>
+                </div>
+                <div class="md:hidden">
+                    <button onclick="toggleMobileMenu()" class="text-zinc-400">☰</button>
+                </div>
+            </div>
         </div>
-        <div id="render-wrapper">
-            <div id="render-area"></div>
+        <div id="mobile-menu" class="hidden bg-zinc-900 border-b border-zinc-800 md:hidden">
+            <button onclick="showSection('excel')" class="block w-full text-left px-4 py-3 border-b border-zinc-800">엑셀 뷰어</button>
+            <button onclick="showSection('pdf')" class="block w-full text-left px-4 py-3 border-b border-zinc-800">PDF 요약</button>
+            <button onclick="showSection('export')" class="block w-full text-left px-4 py-3">CSV 내보내기</button>
         </div>
-    </div>
-</div>
+    </nav>
 
-<script>
-    let drafts = JSON.parse(localStorage.getItem('orig_drafts') || '[]');
+    <main class="flex-grow max-w-6xl mx-auto w-full p-4">
+        
+        <section id="excel-section" class="content-section">
+            <h2 class="text-2xl font-bold mb-4 text-blue-400">📊 엑셀 파일 출력</h2>
+            <div class="bg-zinc-900 p-6 rounded-lg border border-zinc-800 mb-6">
+                <input type="file" id="excelInput" accept=".xlsx, .xls" class="block w-full text-sm text-zinc-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer">
+            </div>
+            <div id="excelDisplay" class="overflow-x-auto bg-zinc-900 rounded-lg border border-zinc-800">
+                <p class="p-10 text-center text-zinc-500">파일을 업로드하면 이곳에 내용이 표시됩니다.</p>
+            </div>
+        </section>
 
-    function getHTML() {
-        const v = {
-            rel: document.getElementById('rel').value || '',
-            dept: document.getElementById('dept').value || '',
-            name: document.getElementById('name').value || '',
-            phone: document.getElementById('phone').value || '',
-            type: document.getElementById('type').value || '',
-            reason: document.getElementById('reason').value || '',
-            date: document.getElementById('date').value || '',
-            addr: document.getElementById('addr').value || '',
-            sender: document.getElementById('sender').value || '',
-            method: document.getElementById('method').value || ''
-        };
-
-        // 요청하신 원본 HTML 양식 그대로 (변수만 매핑)
-        return `
-<table border="0" cellpadding="0" cellspacing="0" style="border-collapse: collapse; width: 848px; height: 1133.47px;"><colgroup><col width="37" span="2" style="width: 37px;"> <col width="133" style="width: 133px;"> <col width="72" span="3" style="width: 72px;"> <col width="133" style="width: 133px;"> <col width="72" span="3" style="width: 72px;"> <col width="37" span="2" style="width: 37px;"> </colgroup>
-	<tbody>
-		<tr><td colspan="12" style="height: 25px;"></td></tr>
-		<tr><td style="height: 25px;"></td><td style="border-top: 1px solid windowtext; border-left: 1px solid windowtext; height: 25px;"></td><td colspan="8" style="border-top: 1px solid windowtext;"></td><td style="border-top: 1px solid windowtext; border-right: 1px solid windowtext;"></td><td></td></tr>
-		<tr><td style="height: 38px;"></td><td style="border-left: 1px solid windowtext;"></td><td colspan="8" style="font-size: 20pt; font-family: 함초롬돋움, monospace; text-align: center;">경조화환 &amp; 경조비 신청서</td><td style="border-right: 1px solid windowtext;"></td><td></td></tr>
-		<tr><td colspan="12" style="height: 66px; border-left: 1px solid windowtext; border-right: 1px solid windowtext;"></td></tr>
-		<tr><td style="height: 23px;"></td><td style="border-left: 1px solid windowtext;"></td><td colspan="8" style="font-size: 11pt; font-weight: 700; font-family:
+        <section id="pdf-section" class="content-section hidden">
+            <h2 class="text-2xl font-bold mb-4 text-green-400">📄 PDF 내용 추출 및 요약</h2>
+            <div class="bg-zinc-900 p-6 rounded-lg border border-zinc-800 mb-6">
+                <input type="file" id="pdfInput" accept=".pdf" class="block w-full text-sm text-zinc-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-600 file:text-white hover:file:bg-green-700 cursor-pointer">
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-zinc-900 p-4 rounded-lg border border-zinc-800">
+                    <h3 class="font-bold mb-2 text-zinc-400">원문 텍스트</h3>
+                    <textarea id="pdfRawText" class="w-full h-64 bg-black border border-zinc-700 p-3 rounded text-sm overflow-y-auto" readonly placeholder="PDF에서 추출된 텍스트..."></textarea>
+                </div>
+                <div class="bg-zinc-900 p-4 rounded-lg border border-zinc-800">
+                    <h3 class="font-bold mb-2 text-zinc-400">간이 요약 (키워드 빈도)</h3>
+                    <div id="pdfSummary" class="w-full h-64 bg-black border border-zinc-700 p-3 rounded text-sm overflow-y-auto">
+                        요약 결과가 여기에 표시됩니다.
+                    </div>
+                </div>
+            </div>
+        </section

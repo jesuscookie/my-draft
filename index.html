@@ -2,252 +2,102 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>통합 기안 관리 시스템</title>
+    <title>경조 기안 보관함 - 원본 양식 완벽 반영</title>
     <style>
-        :root { --primary: #2c3e50; --accent: #3498db; --bg: #f0f2f5; }
+        :root { --primary: #2c3e50; --accent: #3498db; --bg: #f5f6f7; }
         body { font-family: 'Malgun Gothic', sans-serif; background: var(--bg); margin: 0; display: flex; height: 100vh; overflow: hidden; }
         
-        /* 왼쪽: 입력 설정 */
-        .sidebar { width: 380px; background: white; border-right: 1px solid #ddd; padding: 20px; display: flex; flex-direction: column; overflow-y: auto; flex-shrink: 0; }
-        .sidebar h2 { margin-top: 0; font-size: 18px; border-left: 4px solid var(--accent); padding-left: 10px; }
+        /* 사이드바 설정 */
+        .sidebar { width: 350px; background: white; border-right: 1px solid #ddd; padding: 20px; display: flex; flex-direction: column; overflow-y: auto; flex-shrink: 0; }
+        .sidebar h2 { font-size: 18px; color: var(--primary); margin-bottom: 20px; border-bottom: 2px solid var(--accent); padding-bottom: 10px; }
         .form-group { margin-bottom: 10px; }
-        label { display: block; font-size: 11px; font-weight: bold; color: #555; margin-bottom: 2px; }
-        input, select { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; box-sizing: border-box; }
-        select { background-color: #f9f9f9; font-weight: bold; border: 2px solid var(--accent); }
+        label { display: block; font-size: 11px; font-weight: bold; color: #666; margin-bottom: 3px; }
+        input { width: 100%; padding: 7px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; box-sizing: border-box; }
         
-        /* 오른쪽 영역 */
-        .main-content { flex: 1; display: flex; flex-direction: column; min-width: 850px; }
-        
-        /* 상단: 보관함 리스트 */
-        .archive-area { height: 25%; background: #fff; border-bottom: 2px solid #ddd; padding: 15px; overflow-y: auto; }
+        /* 메인 영역 */
+        .main-pane { flex: 1; display: flex; flex-direction: column; min-width: 900px; }
+        .archive-pane { height: 30%; background: #fff; border-bottom: 1px solid #ddd; padding: 15px; overflow-y: auto; }
         .archive-table { width: 100%; border-collapse: collapse; font-size: 12px; }
         .archive-table th { background: var(--primary); color: white; padding: 8px; position: sticky; top: 0; }
         .archive-table td { border-bottom: 1px solid #eee; padding: 8px; text-align: center; cursor: pointer; }
-        .archive-table tr:hover td { background: #eef7ff; }
+        .archive-table tr:hover td { background: #f0f7ff; }
 
-        /* 하단: 미리보기 및 복사 */
-        .preview-area { flex: 1; padding: 20px; overflow: auto; background: #666; display: flex; flex-direction: column; align-items: center; }
-        .btn-row { display: flex; gap: 10px; margin-bottom: 15px; flex-shrink: 0; }
+        /* 미리보기 영역 */
+        .preview-pane { flex: 1; padding: 20px; overflow: auto; background: #888; display: flex; flex-direction: column; align-items: center; }
+        .btn-row { display: flex; gap: 10px; margin-bottom: 15px; }
+        .btn-copy { background: #27ae60; color: white; padding: 12px 30px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 16px; }
+        .btn-save { background: var(--accent); color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; }
+        .btn-new { background: #95a5a6; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; }
         
-        button { padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
-        .btn-save { background: var(--accent); color: white; }
-        .btn-copy { background: #27ae60; color: white; font-size: 16px; }
-        .btn-new { background: #95a5a6; color: white; }
-        .btn-del { background: #e74c3c; color: white; padding: 4px 8px; font-size: 11px; }
-
-        #render-container { background: white; padding: 40px; box-shadow: 0 0 20px rgba(0,0,0,0.5); transform: scale(0.85); transform-origin: top center; }
+        /* 렌더링 컨테이너: 원본 크기 유지를 위해 scale 조정 */
+        #render-wrapper { background: white; padding: 20px; box-shadow: 0 0 30px rgba(0,0,0,0.3); transform: scale(0.8); transform-origin: top center; }
     </style>
 </head>
 <body>
 
 <div class="sidebar">
-    <h2>📄 기안 설정</h2>
-    <div class="form-group">
-        <label style="color:var(--accent); font-size:13px;">사용할 양식 선택</label>
-        <select id="form-selector" onchange="updatePreview()">
-            <option value="formA">A양식 (기존 경조비 신청서)</option>
-            <option value="formB">B양식 (신규 추가용 예시)</option>
-        </select>
-    </div>
-    <hr style="width:100%; margin: 15px 0;">
-    
+    <h2>✍️ 기안 정보 입력</h2>
     <input type="hidden" id="edit-id">
-    <div class="form-group"><label>보관용 제목</label><input type="text" id="doc-title"></div>
-    <div class="form-group"><label>당사와의 관계</label><input type="text" id="rel"></div>
-    <div class="form-group"><label>회사명/소속</label><input type="text" id="dept"></div>
-    <div class="form-group"><label>성명/직급</label><input type="text" id="name"></div>
-    <div class="form-group"><label>입사년월일</label><input type="text" id="join-date"></div>
-    <div class="form-group"><label>연락처</label><input type="text" id="phone"></div>
-    <div class="form-group"><label>경조구분/사유</label><input type="text" id="type"></div>
-    <div class="form-group"><label>경조일자</label><input type="text" id="date"></div>
-    <div class="form-group"><label>주소/장소</label><input type="text" id="addr"></div>
-    <div class="form-group"><label>보내는 사람</label><input type="text" id="sender"></div>
-    <div class="form-group"><label>지급방법/계좌</label><input type="text" id="method"></div>
+    <div class="form-group"><label>보관용 제목</label><input type="text" id="doc-title" placeholder="목록 구분용 제목"></div>
+    <div class="form-group"><label>당사와의 관계</label><input type="text" id="rel" oninput="updatePreview()"></div>
+    <div class="form-group"><label>회사명/소속</label><input type="text" id="dept" oninput="updatePreview()"></div>
+    <div class="form-group"><label>성명/직급</label><input type="text" id="name" oninput="updatePreview()"></div>
+    <div class="form-group"><label>연락처</label><input type="text" id="phone" oninput="updatePreview()"></div>
+    <div class="form-group"><label>경조구분</label><input type="text" id="type" oninput="updatePreview()"></div>
+    <div class="form-group"><label>목적(사유)</label><input type="text" id="reason" oninput="updatePreview()"></div>
+    <div class="form-group"><label>경조일자</label><input type="text" id="date" oninput="updatePreview()"></div>
+    <div class="form-group"><label>주소</label><input type="text" id="addr" oninput="updatePreview()"></div>
+    <div class="form-group"><label>보내는 사람(명의)</label><input type="text" id="sender" oninput="updatePreview()"></div>
+    <div class="form-group"><label>지급방법/계좌</label><input type="text" id="method" oninput="updatePreview()"></div>
     
-    <div class="btn-row" style="margin-top:10px;">
-        <button class="btn-save" onclick="saveDraft()">보관함 저장</button>
-        <button class="btn-new" onclick="resetForm()">새로 쓰기</button>
+    <div class="btn-row" style="margin-top:20px;">
+        <button class="btn-save" onclick="saveDraft()">저장</button>
+        <button class="btn-new" onclick="resetForm()">지우기</button>
     </div>
 </div>
 
-<div class="main-content">
-    <div class="archive-area">
-        <h3 style="margin:0 0 10px 0; font-size:15px;">📂 저장된 기안 목록</h3>
+<div class="main-pane">
+    <div class="archive-pane">
+        <h3 style="margin:0 0 10px 0;">📂 기안 보관함</h3>
         <table class="archive-table">
-            <thead>
-                <tr>
-                    <th width="100">날짜</th>
-                    <th>제목</th>
-                    <th width="100">이름</th>
-                    <th width="60">삭제</th>
-                </tr>
-            </thead>
+            <thead><tr><th>저장일</th><th>제목</th><th>성명</th><th>삭제</th></tr></thead>
             <tbody id="archive-list"></tbody>
         </table>
     </div>
     
-    <div class="preview-area">
+    <div class="preview-pane">
         <div class="btn-row">
-            <button class="btn-copy" onclick="copyHTML()">⭐ 현재 양식 HTML 복사하기 ⭐</button>
+            <button class="btn-copy" onclick="copyHTML()">📋 현재 양식 HTML 복사</button>
         </div>
-        <div id="render-container">
+        <div id="render-wrapper">
             <div id="render-area"></div>
         </div>
     </div>
 </div>
 
 <script>
-    // --- 양식 라이브러리 (여기에 HTML 추가) ---
-    const templateLib = {
-        // [A양식] 사용자가 보내주신 원본 양식
-        formA: (v) => `
-            <table border="0" cellpadding="0" cellspacing="0" style="border-collapse: collapse; width: 848px; font-family: '맑은 고딕';">
-                <tbody>
-                    <tr><td colspan="10" style="height:38px; font-size: 20pt; text-align: center; font-weight:bold; padding:20px 0;">경조화환 & 경조비 신청서</td></tr>
-                    <tr><td colspan="10" style="height:23px; font-weight:bold; padding-left:10px;">■ 인적사항</td></tr>
-                    <tr>
-                        <td width="130" style="border:1px solid #000; background:#fff2cc; text-align:center; font-weight:bold; height:40px;">당사와의 관계</td>
-                        <td colspan="9" style="border:1px solid #000; padding-left:15px;">${v.rel}</td>
-                    </tr>
-                    <tr>
-                        <td style="border:1px solid #000; background:#fff2cc; text-align:center; font-weight:bold; height:40px;">회사명/소속</td>
-                        <td colspan="4" style="border:1px solid #000; padding-left:15px;">${v.dept}</td>
-                        <td width="130" style="border:1px solid #000; background:#fff2cc; text-align:center; font-weight:bold;">성명/직급</td>
-                        <td colspan="4" style="border:1px solid #000; padding-left:15px;">${v.name}</td>
-                    </tr>
-                    <tr>
-                        <td style="border:1px solid #000; background:#fff2cc; text-align:center; font-weight:bold; height:40px;">입사년월일</td>
-                        <td colspan="4" style="border:1px solid #000; padding-left:15px;">${v.joinDate}</td>
-                        <td style="border:1px solid #000; background:#fff2cc; text-align:center; font-weight:bold;">연락처</td>
-                        <td colspan="4" style="border:1px solid #000; padding-left:15px;">${v.phone}</td>
-                    </tr>
-                    <tr><td colspan="10" style="height:30px;"></td></tr>
-                    <tr><td colspan="10" style="height:23px; font-weight:bold; padding-left:10px;">■ 경조내용</td></tr>
-                    <tr>
-                        <td style="border:1px solid #000; background:#fff2cc; text-align:center; font-weight:bold; height:40px;">경조구분/사유</td>
-                        <td colspan="9" style="border:1px solid #000; padding-left:15px;">${v.type}</td>
-                    </tr>
-                    <tr>
-                        <td style="border:1px solid #000; background:#fff2cc; text-align:center; font-weight:bold; height:40px;">경조일자</td>
-                        <td colspan="9" style="border:1px solid #000; padding-left:15px;">${v.date}</td>
-                    </tr>
-                    <tr>
-                        <td style="border:1px solid #000; background:#fff2cc; text-align:center; font-weight:bold; height:40px;">주소</td>
-                        <td colspan="9" style="border:1px solid #000; padding-left:15px;">${v.addr}</td>
-                    </tr>
-                    <tr>
-                        <td style="border:1px solid #000; background:#fff2cc; text-align:center; font-weight:bold; height:40px;">보내는 사람</td>
-                        <td colspan="9" style="border:1px solid #000; padding-left:15px;">${v.sender}</td>
-                    </tr>
-                    <tr><td colspan="10" style="height:30px;"></td></tr>
-                    <tr><td colspan="10" style="height:23px; font-weight:bold; padding-left:10px;">■ 지급정보</td></tr>
-                    <tr>
-                        <td style="border:1px solid #000; background:#fff2cc; text-align:center; font-weight:bold; height:40px;">지급방법/계좌</td>
-                        <td colspan="9" style="border:1px solid #000; padding-left:15px;">${v.method}</td>
-                    </tr>
-                </tbody>
-            </table>`,
+    let drafts = JSON.parse(localStorage.getItem('orig_drafts') || '[]');
 
-        // [B양식] 예시용 간단한 양식
-        formB: (v) => `
-            <div style="width:600px; border:2px solid #333; padding:20px; font-family:'돋움';">
-                <h1 style="text-align:center;">경조금 지급 요청서 (간편형)</h1>
-                <p>소속: ${v.dept} / 성명: ${v.name}</p>
-                <p>사유: ${v.type}</p>
-                <p>일시: ${v.date}</p>
-                <hr>
-                <p style="text-align:right;">위와 같이 경조금을 신청합니다.</p>
-            </div>`
-    };
-
-    // --- 로직 제어 ---
-    let drafts = JSON.parse(localStorage.getItem('myDrafts_v2') || '[]');
-
-    function getInputs() {
-        return {
+    function getHTML() {
+        const v = {
             rel: document.getElementById('rel').value || '',
             dept: document.getElementById('dept').value || '',
             name: document.getElementById('name').value || '',
-            joinDate: document.getElementById('join-date').value || '',
             phone: document.getElementById('phone').value || '',
             type: document.getElementById('type').value || '',
+            reason: document.getElementById('reason').value || '',
             date: document.getElementById('date').value || '',
             addr: document.getElementById('addr').value || '',
             sender: document.getElementById('sender').value || '',
             method: document.getElementById('method').value || ''
         };
-    }
 
-    function updatePreview() {
-        const selectedKey = document.getElementById('form-selector').value;
-        const html = templateLib[selectedKey](getInputs());
-        document.getElementById('render-area').innerHTML = html;
-        return html;
-    }
-
-    function saveDraft() {
-        const title = document.getElementById('doc-title').value;
-        if(!title) return alert("보관용 제목을 적어주세요.");
-
-        const id = document.getElementById('edit-id').value || Date.now();
-        const data = { id, title, date: new Date().toLocaleDateString(), ...getInputs() };
-
-        const idx = drafts.findIndex(d => d.id == id);
-        if(idx > -1) drafts[idx] = data;
-        else drafts.push(data);
-
-        localStorage.setItem('myDrafts_v2', JSON.stringify(drafts));
-        renderList();
-        alert("저장되었습니다.");
-    }
-
-    function renderList() {
-        const tbody = document.getElementById('archive-list');
-        tbody.innerHTML = drafts.slice().reverse().map(d => `
-            <tr>
-                <td onclick="loadDraft('${d.id}')">${d.date}</td>
-                <td onclick="loadDraft('${d.id}')" style="text-align:left;">${d.title}</td>
-                <td onclick="loadDraft('${d.id}')">${d.name}</td>
-                <td><button class="btn-del" onclick="deleteDraft(event, '${d.id}')">삭제</button></td>
-            </tr>
-        `).join('');
-    }
-
-    function loadDraft(id) {
-        const d = drafts.find(x => x.id == id);
-        if(!d) return;
-        document.getElementById('edit-id').value = d.id;
-        document.getElementById('doc-title').value = d.title;
-        for(let key in d) {
-            const el = document.getElementById(key);
-            if(el) el.value = d[key];
-        }
-        updatePreview();
-    }
-
-    function deleteDraft(e, id) {
-        e.stopPropagation();
-        if(!confirm("삭제할까요?")) return;
-        drafts = drafts.filter(x => x.id != id);
-        localStorage.setItem('myDrafts_v2', JSON.stringify(drafts));
-        renderList();
-        resetForm();
-    }
-
-    function resetForm() {
-        document.getElementById('edit-id').value = '';
-        document.querySelectorAll('.sidebar input').forEach(i => i.value = '');
-        updatePreview();
-    }
-
-    function copyHTML() {
-        navigator.clipboard.writeText(updatePreview()).then(() => alert("HTML 복사 완료!"));
-    }
-
-    document.querySelectorAll('.sidebar input').forEach(el => el.addEventListener('input', updatePreview));
-    renderList();
-    updatePreview();
-</script>
-
-</body>
-</html>
+        // 요청하신 원본 HTML 양식 그대로 (변수만 매핑)
+        return `
+<table border="0" cellpadding="0" cellspacing="0" style="border-collapse: collapse; width: 848px; height: 1133.47px;"><colgroup><col width="37" span="2" style="width: 37px;"> <col width="133" style="width: 133px;"> <col width="72" span="3" style="width: 72px;"> <col width="133" style="width: 133px;"> <col width="72" span="3" style="width: 72px;"> <col width="37" span="2" style="width: 37px;"> </colgroup>
+	<tbody>
+		<tr><td colspan="12" style="height: 25px;"></td></tr>
+		<tr><td style="height: 25px;"></td><td style="border-top: 1px solid windowtext; border-left: 1px solid windowtext; height: 25px;"></td><td colspan="8" style="border-top: 1px solid windowtext;"></td><td style="border-top: 1px solid windowtext; border-right: 1px solid windowtext;"></td><td></td></tr>
+		<tr><td style="height: 38px;"></td><td style="border-left: 1px solid windowtext;"></td><td colspan="8" style="font-size: 20pt; font-family: 함초롬돋움, monospace; text-align: center;">경조화환 &amp; 경조비 신청서</td><td style="border-right: 1px solid windowtext;"></td><td></td></tr>
+		<tr><td colspan="12" style="height: 66px; border-left: 1px solid windowtext; border-right: 1px solid windowtext;"></td></tr>
+		<tr><td style="height: 23px;"></td><td style="border-left: 1px solid windowtext;"></td><td colspan="8" style="font-size: 11pt; font-weight: 700; font-family:

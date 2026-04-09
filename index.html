@@ -1,17 +1,17 @@
 <!DOCTYPE html>
-<html lang="ko" class="dark">
+<html lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>업무 기록 저장소</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
     <style>
         body { background-color: #000000; color: #e5e5e5; }
-        .menu-active { border-bottom: 2px solid #3b82f6; color: #3b82f6; }
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+        .content-section { display: none; }
+        .content-section.active { display: block; }
+        .nav-link.active { border-bottom: 2px solid #3b82f6; color: #3b82f6; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
@@ -20,50 +20,128 @@
         <div class="max-w-6xl mx-auto px-4">
             <div class="flex justify-between items-center h-16">
                 <div class="font-bold text-xl text-white">WORK LOG</div>
-                <div class="hidden md:flex space-x-8">
-                    <button onclick="showSection('excel')" class="nav-link menu-active py-2">엑셀 뷰어</button>
-                    <button onclick="showSection('pdf')" class="nav-link py-2">PDF 요약</button>
-                    <button onclick="showSection('export')" class="nav-link py-2">CSV 내보내기</button>
-                </div>
-                <div class="md:hidden">
-                    <button onclick="toggleMobileMenu()" class="text-zinc-400">☰</button>
+                <div class="flex space-x-6">
+                    <button onclick="showSection('excel')" id="btn-excel" class="nav-link active py-2">엑셀 뷰어</button>
+                    <button onclick="showSection('pdf')" id="btn-pdf" class="nav-link py-2">PDF 요약</button>
+                    <button onclick="showSection('export')" id="btn-export" class="nav-link py-2">CSV 내보내기</button>
                 </div>
             </div>
-        </div>
-        <div id="mobile-menu" class="hidden bg-zinc-900 border-b border-zinc-800 md:hidden">
-            <button onclick="showSection('excel')" class="block w-full text-left px-4 py-3 border-b border-zinc-800">엑셀 뷰어</button>
-            <button onclick="showSection('pdf')" class="block w-full text-left px-4 py-3 border-b border-zinc-800">PDF 요약</button>
-            <button onclick="showSection('export')" class="block w-full text-left px-4 py-3">CSV 내보내기</button>
         </div>
     </nav>
 
-    <main class="flex-grow max-w-6xl mx-auto w-full p-4">
-        
-        <section id="excel-section" class="content-section">
+    <main class="flex-grow max-w-6xl mx-auto w-full p-6">
+        <section id="excel-section" class="content-section active">
             <h2 class="text-2xl font-bold mb-4 text-blue-400">📊 엑셀 파일 출력</h2>
             <div class="bg-zinc-900 p-6 rounded-lg border border-zinc-800 mb-6">
-                <input type="file" id="excelInput" accept=".xlsx, .xls" class="block w-full text-sm text-zinc-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer">
+                <input type="file" id="excelInput" accept=".xlsx, .xls" class="block w-full text-zinc-400 cursor-pointer">
             </div>
-            <div id="excelDisplay" class="overflow-x-auto bg-zinc-900 rounded-lg border border-zinc-800">
-                <p class="p-10 text-center text-zinc-500">파일을 업로드하면 이곳에 내용이 표시됩니다.</p>
+            <div id="excelDisplay" class="overflow-x-auto bg-zinc-900 rounded-lg border border-zinc-800 min-h-[200px]">
+                <p class="p-10 text-center text-zinc-500">파일을 선택하면 표가 생성됩니다.</p>
             </div>
         </section>
 
-        <section id="pdf-section" class="content-section hidden">
-            <h2 class="text-2xl font-bold mb-4 text-green-400">📄 PDF 내용 추출 및 요약</h2>
+        <section id="pdf-section" class="content-section">
+            <h2 class="text-2xl font-bold mb-4 text-green-400">📄 PDF 요약</h2>
             <div class="bg-zinc-900 p-6 rounded-lg border border-zinc-800 mb-6">
-                <input type="file" id="pdfInput" accept=".pdf" class="block w-full text-sm text-zinc-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-600 file:text-white hover:file:bg-green-700 cursor-pointer">
+                <input type="file" id="pdfInput" accept=".pdf" class="block w-full text-zinc-400 cursor-pointer">
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="bg-zinc-900 p-4 rounded-lg border border-zinc-800">
-                    <h3 class="font-bold mb-2 text-zinc-400">원문 텍스트</h3>
-                    <textarea id="pdfRawText" class="w-full h-64 bg-black border border-zinc-700 p-3 rounded text-sm overflow-y-auto" readonly placeholder="PDF에서 추출된 텍스트..."></textarea>
-                </div>
-                <div class="bg-zinc-900 p-4 rounded-lg border border-zinc-800">
-                    <h3 class="font-bold mb-2 text-zinc-400">간이 요약 (키워드 빈도)</h3>
-                    <div id="pdfSummary" class="w-full h-64 bg-black border border-zinc-700 p-3 rounded text-sm overflow-y-auto">
-                        요약 결과가 여기에 표시됩니다.
-                    </div>
-                </div>
+                <textarea id="pdfRawText" class="w-full h-64 bg-black border border-zinc-700 p-3 rounded text-sm" readonly placeholder="추출된 텍스트..."></textarea>
+                <div id="pdfSummary" class="w-full h-64 bg-black border border-zinc-700 p-3 rounded text-sm overflow-y-auto">요약 결과...</div>
             </div>
-        </section
+        </section>
+
+        <section id="export-section" class="content-section">
+            <h2 class="text-2xl font-bold mb-4 text-purple-400">💾 CSV 저장</h2>
+            <div class="bg-zinc-900 p-6 rounded-lg border border-zinc-800">
+                <button onclick="exportToCSV()" class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded font-bold">CSV 다운로드</button>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // PDF 워커 설정
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+
+        let currentData = [];
+
+        // 섹션 전환 로직 수정
+        function showSection(sectionId) {
+            document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+            
+            document.getElementById(sectionId + '-section').classList.add('active');
+            document.getElementById('btn-' + sectionId).classList.add('active');
+        }
+
+        // 엑셀 처리
+        document.getElementById('excelInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if(!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                const data = new Uint8Array(evt.target.result);
+                const workbook = XLSX.read(data, {type: 'array'});
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                currentData = XLSX.utils.sheet_to_json(worksheet, {header: 1});
+                
+                renderTable(currentData);
+            };
+            reader.readAsArrayBuffer(file);
+        });
+
+        function renderTable(data) {
+            if(!data || data.length === 0) return;
+            let html = '<table class="w-full text-left border-collapse">';
+            data.forEach((row, i) => {
+                html += `<tr class="${i === 0 ? 'bg-zinc-800 font-bold' : 'border-b border-zinc-800'}">`;
+                row.forEach(cell => {
+                    html += `<td class="p-3 text-sm border border-zinc-800">${cell || ''}</td>`;
+                });
+                html += '</tr>';
+            });
+            html += '</table>';
+            document.getElementById('excelDisplay').innerHTML = html;
+        }
+
+        // PDF 처리
+        document.getElementById('pdfInput').addEventListener('change', async function(e) {
+            const file = e.target.files[0];
+            if(!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async function() {
+                try {
+                    const typedarray = new Uint8Array(this.result);
+                    const pdf = await pdfjsLib.getDocument(typedarray).promise;
+                    let text = "";
+                    for (let i = 1; i <= pdf.numPages; i++) {
+                        const page = await pdf.getPage(i);
+                        const content = await page.getTextContent();
+                        text += content.items.map(s => s.str).join(" ") + "\n";
+                    }
+                    document.getElementById('pdfRawText').value = text;
+                    document.getElementById('pdfSummary').innerHTML = "추출 완료 (키워드 분석 생략)";
+                } catch (err) {
+                    console.error("PDF 에러:", err);
+                    alert("PDF를 읽는 중 오류가 발생했습니다.");
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        });
+
+        function exportToCSV() {
+            if (currentData.length === 0) return alert("데이터가 없습니다.");
+            const worksheet = XLSX.utils.aoa_to_sheet(currentData);
+            const csv = XLSX.utils.sheet_to_csv(worksheet);
+            const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = "work_log.csv";
+            link.click();
+        }
+    </script>
+</body>
+</html>
